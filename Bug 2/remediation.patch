@@ -1,0 +1,18 @@
+--- fisco_source/bcos-pbft/bcos-pbft/pbft/engine/PBFTEngine.cpp
++++ fisco_source/bcos-pbft/bcos-pbft/pbft/engine/PBFTEngine.cpp
+@@ -1277,6 +1277,15 @@
+     {
+         return false;
+     }
++    // [PATCH] Fix for View-Change Flood Amplification
++    // Refuse view-change messages that are too far in the future
++    if (_viewChangeMsg->view() > m_config->view() + m_config->waterMarkLimit())
++    {
++        PBFT_LOG(WARNING) << LOG_DESC("InvalidViewChangeReq: view too large")
++                          << LOG_KV("recvView", _viewChangeMsg->view())
++                          << LOG_KV("limit", m_config->view() + m_config->waterMarkLimit());
++        return false;
++    }
+     // check the committed proposal hash
+     if (_viewChangeMsg->committedProposal()->index() == m_config->committedProposal()->index() &&
+         _viewChangeMsg->committedProposal()->hash() != m_config->committedProposal()->hash())

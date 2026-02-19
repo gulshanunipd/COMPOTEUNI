@@ -1,0 +1,19 @@
+--- fisco_source/bcos-pbft/bcos-pbft/pbft/engine/PBFTEngine.cpp
++++ fisco_source/bcos-pbft/bcos-pbft/pbft/engine/PBFTEngine.cpp
+@@ -718,6 +718,17 @@
+         return CheckResult::INVALID;
+     }
++
++    // [PATCH] Fix for Replay Attack via Timestamp Acceptance
++    // Ensure message timestamp is within acceptable window (e.g., 30 minutes)
++    auto now = utcTime();
++    auto msgTime = _pbftReq->timestamp();
++    if (msgTime < now - 30 * 60 * 1000 || msgTime > now + 30 * 60 * 1000)
++    {
++         PBFT_LOG(WARNING) << LOG_DESC("checkPBFTMsgState: invalid timestamp")
++                           << LOG_KV("msgTime", msgTime) << LOG_KV("now", now);
++         return CheckResult::INVALID;   
++    }
++
+     return CheckResult::VALID;
+ }

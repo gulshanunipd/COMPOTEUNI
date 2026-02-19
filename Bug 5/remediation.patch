@@ -1,0 +1,20 @@
+--- fisco_source/bcos-pbft/bcos-pbft/pbft/engine/PBFTEngine.cpp
++++ fisco_source/bcos-pbft/bcos-pbft/pbft/engine/PBFTEngine.cpp
+@@ -770,6 +770,16 @@
+                        << m_config->printCurrentState();
+         return CheckResult::INVALID;
+     }
++    
++    // [PATCH] Fix for Role Hijack via Malformed Signature
++    // Strictly verify that the generator of the PrePrepare is the expected leader for this proposal index
++    auto expectedLeader = m_config->leaderIndex(_prePrepareMsg->index());
++    if (_prePrepareMsg->generatedFrom() != expectedLeader)
++    {
++        PBFT_LOG(WARNING) << LOG_DESC("checkPrePrepareMsg: invalid generator (not leader)")
++                          << LOG_KV("generatedFrom", _prePrepareMsg->generatedFrom())
++                          << LOG_KV("expectedLeader", expectedLeader);
++        return CheckResult::INVALID;
++    }
++
+     return CheckResult::VALID;
+ }

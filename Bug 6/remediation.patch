@@ -1,0 +1,21 @@
+--- corda/core/src/main/kotlin/net/corda/core/internal/notary/NotaryServiceFlow.kt
++++ corda/core/src/main/kotlin/net/corda/core/internal/notary/NotaryServiceFlow.kt
+@@ -66,6 +66,12 @@
+     override fun call(): Void? {
+         val requestPayload = otherSideSession.receive<NotarisationPayload>().unwrap { it }
+ 
++        // [PATCH] Fix for Notary Conflict Re-Entry (Bug 6)
++        // Double-check if transaction is already committed/rejected before processing to prevent race conditions
++        val txId = requestPayload.signedTransaction.id
++        val existingResult = service.uniquenessProvider.getResult(txId)
++        if (existingResult != null) {
++             if (existingResult is UniquenessProvider.Result.Success) {
++                 sendSignedResponse(txId, existingResult.signature)
++                 return null
++             } else if (existingResult is UniquenessProvider.Result.Failure) {
++                 throw NotaryException(existingResult.error, txId)
++             }
++        }
++
+         val commitStatus = try {
+             val tx: TransactionParts = validateRequest(requestPayload)

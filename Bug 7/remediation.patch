@@ -1,0 +1,14 @@
+--- corda/core/src/main/kotlin/net/corda/core/transactions/SignedTransaction.kt
++++ corda/core/src/main/kotlin/net/corda/core/transactions/SignedTransaction.kt
+@@ -226,6 +226,11 @@
+     private fun verifySignatures(verificationSupport: NodeVerificationSupport, checkSufficientSignatures: Boolean) {
+         if (checkSufficientSignatures) {
++            // [PATCH] Fix for Signature Field Drop Acceptance (Bug 7)
++            // Enforce that at least one signer is required and present
++            if (this.requiredSigningKeys.isEmpty()) {
++                 throw SignatureException("Transaction must have at least one required signer. Signature field drop detected.")
++            }
++
+             val ctx = coreTransaction
+             val tws: TransactionWithSignatures = when (ctx) {
+                 is WireTransaction -> this  // SignedTransaction implements TransactionWithSignatures in terms of WireTransaction

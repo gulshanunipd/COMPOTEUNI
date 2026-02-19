@@ -1,0 +1,21 @@
+--- fisco_source/bcos-pbft/bcos-pbft/pbft/engine/PBFTEngine.cpp
++++ fisco_source/bcos-pbft/bcos-pbft/pbft/engine/PBFTEngine.cpp
+@@ -712,6 +712,13 @@
+     // FIXME: to check this logic.
+     if (_pbftReq->view() < m_config->view())
+     {
+         PBFT_LOG(DEBUG) << LOG_DESC("checkPBFTMsgState: invalid pbftMsg for invalid view")
+                         << printPBFTMsgInfo(_pbftReq) << m_config->printCurrentState();
+         return CheckResult::INVALID;
+     }
++    // [PATCH] Fix for Commit Replay / Future View (Bug 1)
++    // Strictly enforce that messages must match the current view to prevent replay of future/invalid states
++    if (_pbftReq->view() > m_config->view())
++    {
++        PBFT_LOG(WARNING) << LOG_DESC("checkPBFTMsgState: reject pbftMsg for future view")
++                          << printPBFTMsgInfo(_pbftReq) << m_config->printCurrentState();
++        return CheckResult::INVALID;
++    }
++
+     return CheckResult::VALID;
+ }

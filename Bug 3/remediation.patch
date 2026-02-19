@@ -1,0 +1,19 @@
+--- fisco_source/bcos-pbft/bcos-pbft/pbft/engine/PBFTEngine.cpp
++++ fisco_source/bcos-pbft/bcos-pbft/pbft/engine/PBFTEngine.cpp
+@@ -409,6 +409,16 @@
+     // NOTE: must ensure thread safe, should not write any filed while
+     // encoding broadcast the pre-prepare packet
+     auto encodeStart = utcTime();
++
++    // [PATCH] Fix for Multiple Proposal Acceptance (Bug 3)
++    // Prevent leader from broadcasting conflicting proposals for the same round/view
++    if (m_cacheProcessor->conflictWithProcessedReq(pbftMessage))
++    {
++        PBFT_LOG(WARNING) << LOG_DESC("onRecvProposal: conflict with existing proposal, reject to equivocate")
++                          << LOG_KV("index", pbftMessage->index())
++                          << LOG_KV("hash", pbftMessage->hash().abridged());
++        return;
++    }
++
+     auto encodedData = m_config->codec()->encode(pbftMessage);
+     auto encodeEnd = utcTime();

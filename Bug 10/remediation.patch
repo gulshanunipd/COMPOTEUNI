@@ -1,0 +1,16 @@
+--- quorum/consensus/istanbul/ibft/core/commit.go
++++ quorum/consensus/istanbul/ibft/core/commit.go
+@@ -56,6 +56,12 @@
+ func (c *core) handleCommit(msg *ibfttypes.Message, src istanbul.Validator) error {
+ 	// Decode COMMIT message
+ 	var commit *istanbul.Subject
++
++	// [PATCH] Fix for Commit-Followup Replay (Bug 10)
++	// If we are already committed, ignore further commit messages to prevent state transitions or replay effects
++	if c.state == ibfttypes.StateCommitted {
++		return nil
++	}
++
+ 	err := msg.Decode(&commit)
+ 	if err != nil {
+ 		return istanbulcommon.ErrFailedDecodeCommit

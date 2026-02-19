@@ -1,0 +1,19 @@
+--- quorum/consensus/istanbul/ibft/core/commit.go
++++ quorum/consensus/istanbul/ibft/core/commit.go
+@@ -91,7 +91,11 @@
+ 	sub := c.current.Subject()
+-	if !reflect.DeepEqual(commit, sub) {
+-		logger.Warn("Inconsistent subjects between commit and proposal", "expected", sub, "got", commit)
+-		return istanbulcommon.ErrInconsistentSubject
+-	}
++	// [PATCH] Fix for IBFT Digest Mismatch Commit (Bug 9)
++	// Explicitly compare View and Digest instead of relying on reflect.DeepEqual which might be flaky or insecure
++	if sub == nil || commit.View.Round.Cmp(sub.View.Round) != 0 || 
++	   commit.View.Sequence.Cmp(sub.View.Sequence) != 0 || 
++	   commit.Digest != sub.Digest {
++		logger.Warn("Inconsistent subjects between commit and proposal", "expected", sub, "got", commit)
++		return istanbulcommon.ErrInconsistentSubject
++	}
+ 
+ 	return nil
+ }
